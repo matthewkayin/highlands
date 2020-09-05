@@ -1,6 +1,7 @@
 #ifdef _WIN32
     #define SDL_MAIN_HANDLED
 #endif
+#include "resources.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -17,14 +18,19 @@ void update();
 void render();
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y);
+void render_image(ImageName image_name, int x, int y);
 void render_fps();
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 
+const SDL_Color color_white = (SDL_Color){ .r = 255, .g = 255, .b = 255, .a = 225 };
+
 TTF_Font* font_small = NULL;
 
-const SDL_Color color_white = (SDL_Color){ .r = 255, .g = 255, .b = 255, .a = 225 };
+bool mouse_captured = false;
+int mouse_x = 0;
+int mouse_y = 0;
 
 const unsigned long SECOND = 1000;
 const double TARGET_FPS = 60;
@@ -85,11 +91,46 @@ void input(){
     SDL_Event e;
     while(SDL_PollEvent(&e) != 0){
 
-        if(e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)){
+        if(e.type == SDL_QUIT){
 
             running = false;
+
+        }else if(e.type == SDL_KEYDOWN){
+
+            int key = e.key.keysym.sym;
+
+            if(key == SDLK_ESCAPE){
+
+                if(mouse_captured){
+
+                    SDL_SetRelativeMouseMode(SDL_FALSE);
+                    mouse_captured = false;
+
+                }else{
+
+                    running = false;
+                }
+            }
+
+        }else if(e.type == SDL_MOUSEBUTTONDOWN){
+
+            if(!mouse_captured){
+
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+                mouse_captured = true;
+                continue;
+            }
+
+        }else if(e.type == SDL_MOUSEBUTTONUP){
+
+            if(!mouse_captured){
+
+                continue;
+            }
         }
     }
+
+    SDL_GetMouseState(&mouse_x, &mouse_y);
 }
 
 void update(){
@@ -101,6 +142,11 @@ void render(){
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
+
+    if(mouse_captured){
+
+        render_image(IMAGE_CURSOR, mouse_x, mouse_y);
+    }
 
     render_fps();
 
@@ -143,6 +189,12 @@ void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y){
 
     SDL_FreeSurface(text_surface);
     SDL_DestroyTexture(text_texture);
+}
+
+void render_image(ImageName image_name, int x, int y){
+
+    SDL_Rect dest_rect = (SDL_Rect){ .x = x, .y = y, .w = textures[image_name].width, .h = textures[image_name].height };
+    SDL_RenderCopy(renderer, textures[image_name].texture, NULL, &dest_rect);
 }
 
 void render_fps(){
@@ -190,12 +242,19 @@ bool init_engine(){
         return false;
     }
 
+    if(!load_textures(renderer)){
+
+        return false;
+    };
+
     return true;
 }
 
 void quit_engine(){
 
     TTF_CloseFont(font_small);
+
+    free_textures();
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
