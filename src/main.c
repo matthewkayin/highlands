@@ -1,14 +1,13 @@
 #ifdef _WIN32
     #define SDL_MAIN_HANDLED
 #endif
+#include "global.h"
 #include "resources.h"
+#include "encounter.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
-
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 360
 
 bool init_engine();
 void quit_engine();
@@ -17,14 +16,18 @@ void input();
 void update();
 void render();
 
+void render_encounter();
+
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y);
 void render_image(ImageName image_name, int x, int y);
+void render_part(ImageName image_name, int x, int y, int source_x, int source_y, int width, int height);
 void render_fps();
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 
 const SDL_Color color_white = (SDL_Color){ .r = 255, .g = 255, .b = 255, .a = 225 };
+const SDL_Color color_red = (SDL_Color){ .r = 255, .g = 0, .b = 0, .a = 225 };
 
 TTF_Font* font_small = NULL;
 
@@ -43,6 +46,8 @@ double delta = 0;
 int frames = 0;
 int fps = 0;
 
+Encounter current_state;
+
 int main(){
 
     bool init_successful = init_engine();
@@ -54,6 +59,8 @@ int main(){
 
     second_before_time = SDL_GetTicks();
     frame_before_time = second_before_time;
+
+    current_state = init_encounter();
 
     while(running){
 
@@ -131,11 +138,22 @@ void input(){
     }
 
     SDL_GetMouseState(&mouse_x, &mouse_y);
+    if(mouse_x > SCREEN_WIDTH - CURSOR_WIDTH){
+
+        mouse_x = SCREEN_WIDTH - CURSOR_WIDTH;
+    }
+    if(mouse_y > SCREEN_HEIGHT - CURSOR_HEIGHT){
+
+        mouse_y = SCREEN_HEIGHT - CURSOR_HEIGHT;
+    }
 }
 
 void update(){
 
+    if(mouse_captured){
 
+        current_state = update_encounter(current_state, delta, mouse_x, mouse_y);
+    }
 }
 
 void render(){
@@ -143,14 +161,20 @@ void render(){
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
+    render_encounter();
+
     if(mouse_captured){
 
         render_image(IMAGE_CURSOR, mouse_x, mouse_y);
     }
 
     render_fps();
-
     SDL_RenderPresent(renderer);
+}
+
+void render_encounter(){
+
+    render_part(IMAGE_MAP, 0, 0, current_state.camera_x, current_state.camera_y, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y){
@@ -197,11 +221,36 @@ void render_image(ImageName image_name, int x, int y){
     SDL_RenderCopy(renderer, textures[image_name].texture, NULL, &dest_rect);
 }
 
+void render_part(ImageName image_name, int x, int y, int source_x, int source_y, int width, int height){
+
+    if(source_x < 0 || source_y < 0 || source_x >= textures[image_name].width || source_y >= textures[image_name].height){
+
+        printf("Cannot render part! Source pos of (%i, %i) is out of bounds for image_name %i\n", source_x, source_y, image_name);
+        return;
+    }
+
+    int source_width = width;
+    int source_height = height;
+
+    if(source_width > textures[image_name].width - source_x){
+
+        source_width = textures[image_name].width - source_x;
+    }
+    if(source_height > textures[image_name].height - source_y){
+
+        source_height = textures[image_name].height - source_y;
+    }
+
+    SDL_Rect source_rect = (SDL_Rect){ .x = source_x, .y = source_y, .w = source_width, .h = source_height };
+    SDL_Rect dest_rect = (SDL_Rect){ .x = x, .y = y, .w = source_width, .h = height };
+    SDL_RenderCopy(renderer, textures[image_name].texture, &source_rect, &dest_rect);
+}
+
 void render_fps(){
 
     char fps_text[10];
     sprintf(fps_text, "FPS: %i", fps);
-    render_text(font_small, fps_text, color_white, 0, 0);
+    render_text(font_small, fps_text, color_red, 0, 0);
 }
 
 bool init_engine(){

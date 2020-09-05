@@ -2,7 +2,8 @@
 
 // Define externs
 char* image_paths[IMAGENAME_COUNT] = {
-    "res/cursor.png"
+    "res/cursor.png",
+    "res/map.png"
 };
 Texture textures[IMAGENAME_COUNT];
 
