@@ -1,7 +1,7 @@
 C = gcc
 CFLAGS = -Wall -std=c99
 DBGFLAGS = -g
-IFLAGS = -I include
+IFLAGS =
 LFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf
 TARGET = game
 SRCSDIR = src

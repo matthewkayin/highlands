@@ -16,6 +16,7 @@ typedef struct{
 typedef enum{
     IMAGE_CURSOR,
     IMAGE_MAP,
+    IMAGE_KNIGHT,
     IMAGENAME_COUNT
 } ImageName;
 

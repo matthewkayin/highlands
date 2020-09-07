@@ -34,6 +34,8 @@ TTF_Font* font_small = NULL;
 bool mouse_captured = false;
 int mouse_x = 0;
 int mouse_y = 0;
+int mouse_relative_x = 0;
+int mouse_relative_y = 0;
 
 const unsigned long SECOND = 1000;
 const double TARGET_FPS = 60;
@@ -45,8 +47,6 @@ bool running = true;
 double delta = 0;
 int frames = 0;
 int fps = 0;
-
-Encounter current_state;
 
 int main(){
 
@@ -60,7 +60,7 @@ int main(){
     second_before_time = SDL_GetTicks();
     frame_before_time = second_before_time;
 
-    current_state = init_encounter();
+    init_encounter();
 
     while(running){
 
@@ -134,17 +134,16 @@ void input(){
 
                 continue;
             }
+
+        }else if(e.type == SDL_MOUSEMOTION){
+
+            mouse_x = min(e.motion.x, SCREEN_WIDTH - CURSOR_WIDTH);
+            mouse_y = min(e.motion.y, SCREEN_HEIGHT - CURSOR_HEIGHT);
+            mouse_relative_x = e.motion.xrel;
+            mouse_relative_y = e.motion.yrel;
+
+            input_update_camera(mouse_x, mouse_y, mouse_relative_x, mouse_relative_y);
         }
-    }
-
-    SDL_GetMouseState(&mouse_x, &mouse_y);
-    if(mouse_x > SCREEN_WIDTH - CURSOR_WIDTH){
-
-        mouse_x = SCREEN_WIDTH - CURSOR_WIDTH;
-    }
-    if(mouse_y > SCREEN_HEIGHT - CURSOR_HEIGHT){
-
-        mouse_y = SCREEN_HEIGHT - CURSOR_HEIGHT;
     }
 }
 
@@ -152,7 +151,7 @@ void update(){
 
     if(mouse_captured){
 
-        current_state = update_encounter(current_state, delta, mouse_x, mouse_y);
+        update_encounter(delta);
     }
 }
 
@@ -174,7 +173,9 @@ void render(){
 
 void render_encounter(){
 
-    render_part(IMAGE_MAP, 0, 0, current_state.camera_x, current_state.camera_y, SCREEN_WIDTH, SCREEN_HEIGHT);
+    vector camera_position = get_camera_position();
+    // render_part(IMAGE_MAP, 0, 0, camera_position.x, camera_position.y, SCREEN_WIDTH, SCREEN_HEIGHT);
+    render_image(IMAGE_MAP, -camera_position.x, -camera_position.y);
 }
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y){
