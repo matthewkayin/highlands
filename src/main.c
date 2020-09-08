@@ -38,13 +38,13 @@ int mouse_relative_x = 0;
 int mouse_relative_y = 0;
 
 const unsigned long SECOND = 1000;
-const double TARGET_FPS = 60;
-const unsigned long FRAME_TIME = (unsigned long)(SECOND / (double)TARGET_FPS);
+const float TARGET_FPS = 60;
+const unsigned long FRAME_TIME = (unsigned long)(SECOND / (float)TARGET_FPS);
 unsigned long second_before_time;
 unsigned long frame_before_time;
 unsigned long current_time;
 bool running = true;
-double delta = 0;
+float delta = 0;
 int frames = 0;
 int fps = 0;
 
@@ -78,7 +78,7 @@ int main(){
             second_before_time += SECOND;
         }
 
-        delta = (current_time - frame_before_time) / (double)FRAME_TIME;
+        delta = (current_time - frame_before_time) / (float)FRAME_TIME;
 
         if(current_time - frame_before_time < FRAME_TIME){
 
@@ -89,6 +89,7 @@ int main(){
         frame_before_time = SDL_GetTicks();
     }
 
+    deinit_encounter();
     quit_engine();
     return 0;
 }
@@ -176,6 +177,15 @@ void render_encounter(){
     vector camera_position = get_camera_position();
     // render_part(IMAGE_MAP, 0, 0, camera_position.x, camera_position.y, SCREEN_WIDTH, SCREEN_HEIGHT);
     render_image(IMAGE_MAP, -camera_position.x, -camera_position.y);
+
+    for(int index = 0; index < get_player_units_size(); index++){
+
+        if(is_unit_on_screen(index)){
+
+            vector unit_position = get_player_unit_position(index);
+            render_image(IMAGE_KNIGHT, unit_position.x - camera_position.x, unit_position.y - camera_position.y);
+        }
+    }
 }
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y){

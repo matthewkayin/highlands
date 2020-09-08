@@ -2,7 +2,7 @@ C = gcc
 CFLAGS = -Wall -std=c99
 DBGFLAGS = -g
 IFLAGS =
-LFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf
+LFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lm
 TARGET = game
 SRCSDIR = src
 OBJSDIR = obj
