@@ -4,14 +4,14 @@
 #include <stdbool.h>
 
 typedef struct{
-    int x;
-    int y;
+    double x;
+    double y;
 } vector;
 
 typedef struct{
-    float x;
-    float y;
-} float_vector;
+    int x;
+    int y;
+} int_vector;
 
 typedef struct{
     int x;
@@ -21,30 +21,32 @@ typedef struct{
 } rectangle;
 
 extern const vector ZERO_VECTOR;
-extern const float_vector ZERO_FLOAT_VECTOR;
+extern const int_vector ZERO_INT_VECTOR;
 
-// Int vector functions
-vector new_vector(int x, int y);
-vector as_int_vector(float_vector a);
+// Vector functions
+vector new_vector(double x, double y);
 vector vector_sum(vector a, vector b);
 vector vector_difference(vector a, vector b);
-vector vector_mult_int(vector a, int b);
-vector vector_mult_float(vector a, float b);
-vector vector_scale(vector old_vector, float new_magnitude);
-float vector_distance(vector a, vector b);
+vector vector_mult_scaler(vector a, double b);
+vector vector_normalize(vector old_vector);
+vector vector_scale(vector old_vector, double new_magnitude);
+double vector_distance(vector a, vector b);
+bool vectors_equal(vector a, vector b);
+int_vector as_int_vector(vector a);
 
-// Float vector functions
-float_vector new_float_vector(float x, float y);
-float_vector as_float_vector(vector a);
-float_vector float_vector_sum(float_vector a, float_vector b);
-float_vector float_vector_difference(float_vector a, float_vector b);
-float_vector float_vector_mult_int(float_vector a, int b);
-float_vector float_vector_mult_float(float_vector a, float b);
-float_vector float_vector_scale(float_vector old_vector, float new_magnitude);
+// Int vector functions
+int_vector new_int_vector(int x, int y);
+int_vector int_vector_sum(int_vector a, int_vector b);
+int_vector int_vector_mult_scaler(int_vector a, int b);
+vector as_double_vector(int_vector a);
 
 // Rectangle functions
 rectangle rect_from_vect(vector origin, int width, int height);
 bool is_rect_collision(rectangle a, rectangle b);
 bool is_point_in_rect(vector point, rectangle rect);
+
+// Misc math functions
+double min(double a, double b);
+double max(double a, double b);
 
 #endif

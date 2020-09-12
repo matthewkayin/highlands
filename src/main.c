@@ -3,7 +3,7 @@
 #endif
 #include "global.h"
 #include "resources.h"
-#include "encounter.h"
+#include "combat.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -16,7 +16,7 @@ void input();
 void update();
 void render();
 
-void render_encounter();
+void render_combat();
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y);
 void render_image(ImageName image_name, int x, int y);
@@ -38,15 +38,19 @@ int mouse_relative_x = 0;
 int mouse_relative_y = 0;
 
 const unsigned long SECOND = 1000;
-const float TARGET_FPS = 60;
-const unsigned long FRAME_TIME = (unsigned long)(SECOND / (float)TARGET_FPS);
+const int TARGET_FPS = 60;
+const double FRAME_TIME = SECOND / (double)TARGET_FPS;
+const int TARGET_UPS = 25;
+const double UPDATE_TIME = SECOND / (double)TARGET_UPS;
 unsigned long second_before_time;
 unsigned long frame_before_time;
-unsigned long current_time;
+unsigned long last_update_time;
 bool running = true;
-float delta = 0;
-int frames = 0;
+double delta = 0;
+int frames_this_second = 0;
+double deltas_this_second = 0;
 int fps = 0;
+int ups = 0;
 
 int main(){
 
@@ -59,8 +63,9 @@ int main(){
 
     second_before_time = SDL_GetTicks();
     frame_before_time = second_before_time;
+    last_update_time = second_before_time;
 
-    init_encounter();
+    init_combat();
 
     while(running){
 
@@ -68,17 +73,22 @@ int main(){
         update();
         render();
 
-        frames++;
-        current_time = SDL_GetTicks();
+        frames_this_second++;
+        unsigned long current_time = SDL_GetTicks();
 
         if(current_time - second_before_time >= SECOND){
 
-            fps = frames;
-            frames = 0;
+            fps = frames_this_second;
+            ups = (int)deltas_this_second;
+            frames_this_second = 0;
+            deltas_this_second -= ups;
             second_before_time += SECOND;
         }
 
-        delta = (current_time - frame_before_time) / (float)FRAME_TIME;
+        double current_delta = (current_time - last_update_time) / UPDATE_TIME;
+        delta += current_delta;
+        deltas_this_second += current_delta;
+        last_update_time = current_time;
 
         if(current_time - frame_before_time < FRAME_TIME){
 
@@ -89,7 +99,7 @@ int main(){
         frame_before_time = SDL_GetTicks();
     }
 
-    deinit_encounter();
+    deinit_combat();
     quit_engine();
     return 0;
 }
@@ -136,6 +146,11 @@ void input(){
                 continue;
             }
 
+            if(e.button.button == SDL_BUTTON_RIGHT){
+
+                input_handle_right_click(e.button.x, e.button.y);
+            }
+
         }else if(e.type == SDL_MOUSEMOTION){
 
             mouse_x = min(e.motion.x, SCREEN_WIDTH - CURSOR_WIDTH);
@@ -150,9 +165,16 @@ void input(){
 
 void update(){
 
+    if(delta < 1){
+
+        return;
+    }
+
     if(mouse_captured){
 
-        update_encounter(delta);
+        int full_deltas = (int)delta;
+        delta -= full_deltas;
+        update_combat(full_deltas);
     }
 }
 
@@ -161,7 +183,7 @@ void render(){
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    render_encounter();
+    render_combat();
 
     if(mouse_captured){
 
@@ -172,17 +194,28 @@ void render(){
     SDL_RenderPresent(renderer);
 }
 
-void render_encounter(){
+void render_combat(){
 
-    vector camera_position = get_camera_position();
-    // render_part(IMAGE_MAP, 0, 0, camera_position.x, camera_position.y, SCREEN_WIDTH, SCREEN_HEIGHT);
-    render_image(IMAGE_MAP, -camera_position.x, -camera_position.y);
+    int_vector camera_position = get_camera_position();
+    rectangle screen_rect = (rectangle){ .x = 0, .y = 0, .width = SCREEN_WIDTH, .height = SCREEN_HEIGHT };
+    for(int x = 0; x < get_map_tile_width(); x++){
+
+        for(int y = 0; y < get_map_tile_height(); y++){
+
+            int draw_x = (x * MAP_TILE_SIZE) - camera_position.x;
+            int draw_y = (y * MAP_TILE_SIZE) - camera_position.y;
+            if(is_rect_collision((rectangle){ .x = draw_x, .y = draw_y, .width = MAP_TILE_SIZE, .height = MAP_TILE_SIZE }, screen_rect)){
+
+                render_image(IMAGE_GRASS_TILE, (x * MAP_TILE_SIZE) - camera_position.x, (y * MAP_TILE_SIZE) - camera_position.y);
+            }
+        }
+    }
 
     for(int index = 0; index < get_player_units_size(); index++){
 
         if(is_unit_on_screen(index)){
 
-            vector unit_position = get_player_unit_position(index);
+            int_vector unit_position = get_player_unit_position(index);
             render_image(IMAGE_KNIGHT, unit_position.x - camera_position.x, unit_position.y - camera_position.y);
         }
     }
@@ -262,6 +295,9 @@ void render_fps(){
     char fps_text[10];
     sprintf(fps_text, "FPS: %i", fps);
     render_text(font_small, fps_text, color_red, 0, 0);
+    char ups_text[15];
+    sprintf(ups_text, "UPS: %i", ups);
+    render_text(font_small, ups_text, color_red, 0, 10);
 }
 
 bool init_engine(){
