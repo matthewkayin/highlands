@@ -18,6 +18,8 @@ void input();
 void update();
 void render();
 
+rectangle input_get_select_rect();
+
 void render_combat();
 
 void render_text(TTF_Font* font, char* text, SDL_Color color, int x, int y);
@@ -38,6 +40,8 @@ const SDL_Color color_red = (SDL_Color){ .r = 255, .g = 0, .b = 0, .a = 225 };
 TTF_Font* font_small = NULL;
 
 bool mouse_captured = false;
+int select_start_x = -1;
+int select_start_y = -1;
 int mouse_x = 0;
 int mouse_y = 0;
 int mouse_relative_x = 0;
@@ -118,22 +122,34 @@ void input(){
         if(e.type == SDL_QUIT){
 
             running = false;
+            return;
+        }
 
-        }else if(e.type == SDL_KEYDOWN){
+        if(!mouse_captured){
+
+            if(e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE){
+
+                running = false;
+                return;
+            }
+
+            if(e.type == SDL_MOUSEBUTTONDOWN){
+
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+                mouse_captured = true;
+            }
+
+            continue;
+        }
+
+        if(e.type == SDL_KEYDOWN){
 
             int key = e.key.keysym.sym;
 
             if(key == SDLK_ESCAPE){
 
-                if(mouse_captured){
-
-                    SDL_SetRelativeMouseMode(SDL_FALSE);
-                    mouse_captured = false;
-
-                }else{
-
-                    running = false;
-                }
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+                mouse_captured = false;
 
             }else if(key == SDLK_F11){
 
@@ -142,23 +158,41 @@ void input(){
 
         }else if(e.type == SDL_MOUSEBUTTONDOWN){
 
-            if(!mouse_captured){
+            if(e.button.button == SDL_BUTTON_LEFT){
 
-                SDL_SetRelativeMouseMode(SDL_TRUE);
-                mouse_captured = true;
-                continue;
+                select_start_x = min(e.button.x, SCREEN_WIDTH - CURSOR_WIDTH);
+                select_start_y = min(e.button.y, SCREEN_HEIGHT - CURSOR_HEIGHT);
             }
 
         }else if(e.type == SDL_MOUSEBUTTONUP){
 
-            if(!mouse_captured){
+            if(e.button.x == select_start_x && e.button.y == select_start_y){
 
-                continue;
+                select_start_x = -1;
+                select_start_y = -1;
             }
 
-            if(e.button.button == SDL_BUTTON_RIGHT){
+            if(select_start_x == -1){
 
-                input_handle_right_click(e.button.x, e.button.y);
+                if(e.button.button == SDL_BUTTON_RIGHT){
+
+                    input_handle_right_click(e.button.x, e.button.y);
+
+                }else if(e.button.button == SDL_BUTTON_LEFT){
+
+                    input_handle_left_click(e.button.x, e.button.y);
+                }
+
+            }else{
+
+                if(e.button.button == SDL_BUTTON_LEFT){
+
+                    mouse_x = min(e.button.x, SCREEN_WIDTH - CURSOR_WIDTH);
+                    mouse_y = min(e.button.y, SCREEN_HEIGHT - CURSOR_HEIGHT);
+                    input_handle_select_rect(input_get_select_rect());
+                    select_start_x = -1;
+                    select_start_y = -1;
+                }
             }
 
         }else if(e.type == SDL_MOUSEMOTION){
@@ -171,6 +205,38 @@ void input(){
             input_update_camera(mouse_x, mouse_y, mouse_relative_x, mouse_relative_y);
         }
     }
+}
+
+rectangle input_get_select_rect(){
+
+    // Return null if not selecting
+    if(select_start_x == -1){
+
+        return rect_from_vect(NULL_VECTOR, 0, 0);
+    }
+
+    // Get x and y dist
+    int x_dist = mouse_x - select_start_x;
+    int y_dist = mouse_y - select_start_y;
+    if(x_dist == 0 || y_dist == 0){
+
+        return rect_from_vect(NULL_VECTOR, 0, 0);
+    }
+
+    // Determine top left corner
+    int origin_x = select_start_x;
+    int origin_y = select_start_y;
+    if(x_dist < 0){
+
+        origin_x = mouse_x;
+    }
+    if(y_dist < 0){
+
+        origin_y = mouse_y;
+    }
+
+    // Return result rectangle
+    return rect_from_vect(new_vector((float)origin_x, (float)origin_y), abs(x_dist), abs(y_dist));
 }
 
 void update(){
@@ -208,6 +274,8 @@ void render_combat(){
 
     int_vector camera_position = get_camera_position();
     rectangle screen_rect = (rectangle){ .x = 0, .y = 0, .width = SCREEN_WIDTH, .height = SCREEN_HEIGHT };
+
+    // Render map
     for(int x = 0; x < get_map_tile_width(); x++){
 
         for(int y = 0; y < get_map_tile_height(); y++){
@@ -221,13 +289,39 @@ void render_combat(){
         }
     }
 
+    // Render units
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     for(int index = 0; index < get_player_units_size(); index++){
 
         if(is_unit_on_screen(index)){
 
             int_vector unit_position = get_player_unit_position(index);
             render_image(IMAGE_KNIGHT, unit_position.x - camera_position.x, unit_position.y - camera_position.y);
+
+            if(is_unit_selected(index)){
+
+                SDL_Rect outline_rect = (SDL_Rect){
+                    .x = unit_position.x - camera_position.x,
+                    .y = unit_position.y - camera_position.y,
+                    .w = 32,
+                    .h = 32
+                };
+                SDL_RenderDrawRect(renderer, &outline_rect);
+            }
         }
+    }
+
+    // Render select rect
+    if(select_start_x != -1){
+
+        rectangle select_rect = input_get_select_rect();
+        SDL_Rect sdl_select_rect = (SDL_Rect){
+            .x = select_rect.x,
+            .y = select_rect.y,
+            .w = select_rect.width,
+            .h = select_rect.height
+        };
+        SDL_RenderDrawRect(renderer, &sdl_select_rect);
     }
 }
 

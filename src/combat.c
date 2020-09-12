@@ -27,6 +27,12 @@ static unit** player_units;
 static int player_units_capacity;
 static int player_units_size;
 
+// Selection variables
+static int* player_selection;
+static int player_selection_size;
+
+// INIT AND DEINIT STATE FUNCTIONS
+
 void init_combat(){
 
     map_tile_width = 40;
@@ -46,7 +52,10 @@ void init_combat(){
         player_units[index] = NULL;
     }
 
+    player_selection_clear();
+
     add_unit(100, 100);
+    add_unit(150, 100);
 }
 
 void deinit_combat(){
@@ -57,6 +66,8 @@ void deinit_combat(){
     }
     free(player_units);
 }
+
+// GETTERS
 
 int get_map_tile_width(){
 
@@ -78,6 +89,11 @@ int get_player_units_size(){
     return player_units_size;
 }
 
+int get_player_selection_size(){
+
+    return player_selection_size;
+}
+
 bool is_unit_on_screen(int index){
 
     if(index >= player_units_size){
@@ -90,16 +106,42 @@ bool is_unit_on_screen(int index){
     return is_rect_collision(rect_from_vect(unit_offset, 32, 32), rect_from_vect(ZERO_VECTOR, SCREEN_WIDTH, SCREEN_HEIGHT));
 }
 
+bool is_unit_selected(int index){
+
+    for(int i = 0; i < player_selection_size; i++){
+
+        if(player_selection[i] == index){
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int_vector get_player_unit_position(int index){
 
     if(index >= player_units_size){
 
         printf("Error! Player unit index out of bounds for get_player_unit_position() at index %i\n", index);
-        return as_int_vector(ZERO_VECTOR);
+        return as_int_vector(NULL_VECTOR);
     }
 
     return as_int_vector(player_units[index]->position);
 }
+
+rectangle get_player_unit_rect(int index){
+
+    if(index >= player_units_size){
+
+        printf("Error! Player unit index out of bounds for get_player_unit_position() at index %i\n", index);
+        return rect_from_vect(NULL_VECTOR, 0, 0);
+    }
+
+    return rect_from_vect(player_units[index]->position, 32, 32);
+}
+
+// UNIT FUNCTIONS
 
 void add_unit(int start_x, int start_y){
 
@@ -166,6 +208,72 @@ vector unit_waypoint_pop(int index){
 
     return position;
 }
+
+// SELECTION FUNCTIONS
+
+void player_selection_clear(){
+
+    if(player_selection != NULL){
+
+        free(player_selection);
+    }
+    player_selection_size = 0;
+    player_selection = NULL;
+}
+
+void player_selection_select_one(int target_x, int target_y){
+
+    player_selection_clear();
+
+    vector selection_point = new_vector((float)target_x, (float)target_y);
+    for(int index = 0; index < player_units_size; index++){
+
+        if(is_point_in_rect(selection_point, get_player_unit_rect(index))){
+
+            player_selection = (int*)malloc(sizeof(int));
+            player_selection[0] = index;
+            player_selection_size = 1;
+            return;
+        }
+    }
+}
+
+void player_selection_select_many(rectangle selection_rect){
+
+    player_selection_clear();
+
+    // Figure out how many will be selected
+    int to_select = 0;
+    for(int index = 0; index < player_units_size; index++){
+
+        if(is_rect_collision(selection_rect, get_player_unit_rect(index))){
+
+            to_select++;
+        }
+    }
+
+    if(to_select == 0){
+
+        return;
+    }
+
+    // Initialize player selection array
+    player_selection = (int*)malloc(sizeof(int) * to_select);
+    for(int index = 0; index < player_units_size; index++){
+
+        if(is_rect_collision(selection_rect, get_player_unit_rect(index))){
+
+            player_selection[player_selection_size] = index;
+            player_selection_size++;
+            if(player_selection_size == to_select){
+
+                return;
+            }
+        }
+    }
+}
+
+// UPDATE FUNCTIONS
 
 void update_combat(int delta){
 
@@ -252,6 +360,8 @@ void update_player_units(int delta){
     }
 }
 
+// INPUT FUNCTIONS
+
 void input_update_camera(int mouse_x, int mouse_y, int mouse_relative_x, int mouse_relative_y){
 
     bool mouse_on_left_edge = mouse_x <= CAMERA_EDGE_SCROLL_GAP;
@@ -286,7 +396,28 @@ void input_update_camera(int mouse_x, int mouse_y, int mouse_relative_x, int mou
     }
 }
 
+void input_handle_left_click(int mouse_x, int mouse_y){
+
+    player_selection_select_one(mouse_x + camera_position.x, mouse_y + camera_position.y);
+}
+
 void input_handle_right_click(int mouse_x, int mouse_y){
 
-    unit_waypoint_add(0, mouse_x + camera_position.x, mouse_y + camera_position.y);
+    for(int index = 0; index < player_selection_size; index++){
+
+        if(player_selection[index] == -1){
+
+            return;
+        }
+
+        unit_waypoint_add(player_selection[index], mouse_x + camera_position.x, mouse_y + camera_position.y);
+    }
+}
+
+void input_handle_select_rect(rectangle select_rect){
+
+    rectangle offset_rect = select_rect;
+    offset_rect.x += camera_position.x;
+    offset_rect.y += camera_position.y;
+    player_selection_select_many(offset_rect);
 }
