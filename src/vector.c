@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 const vector ZERO_VECTOR = (vector){ .x = 0, .y = 0 };
+const vector NULL_VECTOR = (vector){ .x = -1, .y = -1 };
 const int_vector ZERO_INT_VECTOR = (int_vector){ .x = 0, .y = 0 };
 
 vector new_vector(float x, float y){

@@ -21,6 +21,7 @@ typedef struct{
 } rectangle;
 
 extern const vector ZERO_VECTOR;
+extern const vector NULL_VECTOR;
 extern const int_vector ZERO_INT_VECTOR;
 
 // Vector functions

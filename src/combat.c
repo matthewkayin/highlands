@@ -53,7 +53,7 @@ void deinit_combat(){
 
     for(int index = 0; index < player_units_size; index++){
 
-        free(player_units[index]);
+        free_unit(index);
     }
     free(player_units);
 }
@@ -107,14 +107,64 @@ void add_unit(int start_x, int start_y){
     *(player_units[player_units_size]) = (unit){
 
         .position = new_vector((double)start_x, (double)start_y),
-        .target_position = ZERO_VECTOR
+        .waypoint = NULL
     };
     player_units_size++;
 }
 
-void direct_unit(int index, int target_x, int target_y){
+void free_unit(int index){
 
-    player_units[index]->target_position = new_vector(target_x, target_y);
+    while(!vectors_equal(unit_waypoint_pop(index), NULL_VECTOR)){ }
+    free(player_units[index]);
+}
+
+void unit_waypoint_add(int index, int target_x, int target_y){
+
+    vector new_waypoint = new_vector(target_x, target_y);
+    if(player_units[index]->waypoint == NULL){
+
+        player_units[index]->waypoint = (unit_waypoint*)malloc(sizeof(unit_waypoint));
+        player_units[index]->waypoint->position = new_waypoint;
+        player_units[index]->waypoint->next = NULL;
+
+    }else{
+
+        unit_waypoint* current = player_units[index]->waypoint;
+        while(current->next != NULL){
+
+            current = current->next;
+        }
+
+        current->next = (unit_waypoint*)malloc(sizeof(unit_waypoint));
+        current->next->position = new_waypoint;
+        current->next->next = NULL;
+    }
+}
+
+vector unit_waypoint_peek(int index){
+
+    if(player_units[index]->waypoint == NULL){
+
+        return NULL_VECTOR;
+    }
+
+    return player_units[index]->waypoint->position;
+}
+
+vector unit_waypoint_pop(int index){
+
+    if(player_units[index]->waypoint == NULL){
+
+        return NULL_VECTOR;
+    }
+
+    vector position = player_units[index]->waypoint->position;
+
+    unit_waypoint* current = player_units[index]->waypoint;
+    player_units[index]->waypoint = player_units[index]->waypoint->next;
+    free(current);
+
+    return position;
 }
 
 void update_combat(int delta){
@@ -185,16 +235,17 @@ void update_player_units(int delta){
     for(int index = 0; index < player_units_size; index++){
 
         // Update positions
-        if(!vectors_equal(player_units[index]->target_position, ZERO_VECTOR)){
+        vector target_position = unit_waypoint_peek(index);
+        if(!vectors_equal(target_position, NULL_VECTOR)){
 
-            if(vector_distance(player_units[index]->position, player_units[index]->target_position) <= delta * UNIT_SPEED){
+            if(vector_distance(player_units[index]->position, target_position) <= delta * UNIT_SPEED){
 
-                player_units[index]->position = player_units[index]->target_position;
-                player_units[index]->target_position = ZERO_VECTOR;
+                player_units[index]->position = target_position;
+                unit_waypoint_pop(index);
 
             }else{
 
-                vector position_delta = vector_scale(vector_difference(player_units[index]->target_position, player_units[index]->position), UNIT_SPEED);
+                vector position_delta = vector_scale(vector_difference(target_position, player_units[index]->position), UNIT_SPEED);
                 player_units[index]->position = vector_sum(player_units[index]->position, vector_mult_scaler(position_delta, delta));
             }
         }
@@ -237,5 +288,5 @@ void input_update_camera(int mouse_x, int mouse_y, int mouse_relative_x, int mou
 
 void input_handle_right_click(int mouse_x, int mouse_y){
 
-    direct_unit(0, mouse_x + camera_position.x, mouse_y + camera_position.y);
+    unit_waypoint_add(0, mouse_x + camera_position.x, mouse_y + camera_position.y);
 }

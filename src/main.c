@@ -30,7 +30,7 @@ SDL_Renderer* renderer = NULL;
 
 bool is_fullscreen = false;
 int user_window_width = 1280;
-int user_window_height = 800;
+int user_window_height = 720;
 
 const SDL_Color color_white = (SDL_Color){ .r = 255, .g = 255, .b = 255, .a = 225 };
 const SDL_Color color_red = (SDL_Color){ .r = 255, .g = 0, .b = 0, .a = 225 };

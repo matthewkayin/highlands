@@ -4,9 +4,14 @@
 #include "vector.h"
 #include <stdbool.h>
 
+typedef struct unit_waypoint{
+    vector position;
+    struct unit_waypoint* next;
+} unit_waypoint;
+
 typedef struct{
     vector position;
-    vector target_position;
+    unit_waypoint* waypoint;
 } unit;
 
 void init_combat();
@@ -20,7 +25,10 @@ bool is_unit_on_screen(int index);
 int_vector get_player_unit_position(int index);
 
 void add_unit(int start_x, int start_y);
-void direct_unit(int index, int target_x, int target_y);
+void free_unit(int index);
+void unit_waypoint_add(int index, int target_x, int target_y);
+vector unit_waypoint_peek(int index);
+vector unit_waypoint_pop(int index);
 
 void update_combat(int delta);
 void update_camera(int delta);
