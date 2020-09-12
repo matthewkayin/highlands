@@ -10,6 +10,8 @@
 #include <stdbool.h>
 
 bool init_engine();
+void set_window_resolution(int window_width, int window_height);
+void toggle_fullscreen();
 void quit_engine();
 
 void input();
@@ -25,6 +27,10 @@ void render_fps();
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
+
+bool is_fullscreen = false;
+int user_window_width = 1280;
+int user_window_height = 800;
 
 const SDL_Color color_white = (SDL_Color){ .r = 255, .g = 255, .b = 255, .a = 225 };
 const SDL_Color color_red = (SDL_Color){ .r = 255, .g = 0, .b = 0, .a = 225 };
@@ -128,6 +134,10 @@ void input(){
 
                     running = false;
                 }
+
+            }else if(key == SDLK_F11){
+
+                toggle_fullscreen();
             }
 
         }else if(e.type == SDL_MOUSEBUTTONDOWN){
@@ -331,6 +341,8 @@ bool init_engine(){
         return false;
     }
 
+    set_window_resolution(user_window_width, user_window_height);
+
     font_small = TTF_OpenFont("./res/notosans.ttf", 10);
     if(font_small == NULL){
 
@@ -344,6 +356,27 @@ bool init_engine(){
     };
 
     return true;
+}
+
+void set_window_resolution(int window_width, int window_height){
+
+    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_SetWindowSize(window, window_width, window_height);
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
+void toggle_fullscreen(){
+
+    if(is_fullscreen){
+
+        SDL_SetWindowFullscreen(window, 0);
+
+    }else{
+
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+    }
+
+    is_fullscreen = !is_fullscreen;
 }
 
 void quit_engine(){
