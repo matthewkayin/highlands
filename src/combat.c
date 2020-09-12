@@ -86,7 +86,7 @@ bool is_unit_on_screen(int index){
         return false;
     }
 
-    vector unit_offset = vector_difference(player_units[index]->position, as_double_vector(camera_position));
+    vector unit_offset = vector_difference(player_units[index]->position, as_float_vector(camera_position));
     return is_rect_collision(rect_from_vect(unit_offset, 32, 32), rect_from_vect(ZERO_VECTOR, SCREEN_WIDTH, SCREEN_HEIGHT));
 }
 

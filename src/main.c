@@ -39,16 +39,16 @@ int mouse_relative_y = 0;
 
 const unsigned long SECOND = 1000;
 const int TARGET_FPS = 60;
-const double FRAME_TIME = SECOND / (double)TARGET_FPS;
+const float FRAME_TIME = SECOND / (float)TARGET_FPS;
 const int TARGET_UPS = 25;
-const double UPDATE_TIME = SECOND / (double)TARGET_UPS;
+const float UPDATE_TIME = SECOND / (float)TARGET_UPS;
 unsigned long second_before_time;
 unsigned long frame_before_time;
 unsigned long last_update_time;
 bool running = true;
-double delta = 0;
+float delta = 0;
 int frames_this_second = 0;
-double deltas_this_second = 0;
+float deltas_this_second = 0;
 int fps = 0;
 int ups = 0;
 
@@ -85,7 +85,7 @@ int main(){
             second_before_time += SECOND;
         }
 
-        double current_delta = (current_time - last_update_time) / UPDATE_TIME;
+        float current_delta = (current_time - last_update_time) / UPDATE_TIME;
         delta += current_delta;
         deltas_this_second += current_delta;
         last_update_time = current_time;

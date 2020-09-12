@@ -5,7 +5,7 @@
 const vector ZERO_VECTOR = (vector){ .x = 0, .y = 0 };
 const int_vector ZERO_INT_VECTOR = (int_vector){ .x = 0, .y = 0 };
 
-vector new_vector(double x, double y){
+vector new_vector(float x, float y){
 
     return (vector){ .x = x, .y = y };
 }
@@ -20,14 +20,14 @@ vector vector_difference(vector a, vector b){
     return (vector){ .x = a.x - b.x, .y = a.y - b.y };
 }
 
-vector vector_mult_scaler(vector a, double b){
+vector vector_mult_scaler(vector a, float b){
 
     return (vector){ .x = a.x * b, .y = a.y * b };
 }
 
 vector vector_normalize(vector old_vector){
 
-    double old_magnitude = sqrt(pow(old_vector.x, 2) + pow(old_vector.y, 2));
+    float old_magnitude = sqrt(pow(old_vector.x, 2) + pow(old_vector.y, 2));
     if(old_magnitude == 0){
 
         return ZERO_VECTOR;
@@ -36,22 +36,22 @@ vector vector_normalize(vector old_vector){
     return new_vector(old_vector.x / old_magnitude, old_vector.y / old_magnitude);
 }
 
-vector vector_scale(vector old_vector, double new_magnitude){
+vector vector_scale(vector old_vector, float new_magnitude){
 
-    double old_magnitude = sqrt(pow(old_vector.x, 2) + pow(old_vector.y, 2));
+    float old_magnitude = sqrt(pow(old_vector.x, 2) + pow(old_vector.y, 2));
     if(old_magnitude == 0){
 
         return ZERO_VECTOR;
     }
 
-    double scale = new_magnitude / old_magnitude;
+    float scale = new_magnitude / old_magnitude;
 
     return new_vector(old_vector.x * scale, old_vector.y * scale);
 }
 
-double vector_distance(vector a, vector b){
+float vector_distance(vector a, vector b){
 
-    return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+    return (float)sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
 }
 
 bool vectors_equal(vector a, vector b){
@@ -79,9 +79,9 @@ int_vector int_vector_mult_scaler(int_vector a, int b){
     return (int_vector){ .x = a.x * b, .y = a.y * b };
 }
 
-vector as_double_vector(int_vector a){
+vector as_float_vector(int_vector a){
 
-    return (vector){ .x = (double)a.x, .y = (double)a.y };
+    return (vector){ .x = (float)a.x, .y = (float)a.y };
 }
 
 rectangle rect_from_vect(vector origin, int width, int height){
@@ -101,7 +101,7 @@ bool is_point_in_rect(vector point, rectangle rect){
             point.y <= rect.y || point.y >= rect.y + rect.height);
 }
 
-double min(double a, double b){
+float min(float a, float b){
 
     if(a <= b){
 
@@ -113,7 +113,7 @@ double min(double a, double b){
     }
 }
 
-double max(double a, double b){
+float max(float a, float b){
 
     if(a >= b){
 
