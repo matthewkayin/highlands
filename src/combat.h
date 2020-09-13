@@ -11,6 +11,7 @@ typedef struct unit_waypoint{
 
 typedef struct{
     vector position;
+    int blocked_path_timer;
     unit_waypoint* waypoint;
 } unit;
 
@@ -35,6 +36,7 @@ void free_unit(int index);
 void unit_waypoint_add(int index, int target_x, int target_y);
 vector unit_waypoint_peek(int index);
 vector unit_waypoint_pop(int index);
+void unit_waypoint_pop_all(int index);
 
 // Selection functions
 void player_selection_clear();

@@ -10,6 +10,7 @@ static const int CAMERA_ACCELERATION_SPEED = 7;
 
 // Unit constants
 static const int UNIT_SPEED = 3;
+static const int UNIT_BLOCKED_PATH_TIMEOUT = 25 * 15; // 15 seconds
 
 // Map variables
 static int map_tile_width;
@@ -149,6 +150,7 @@ void add_unit(int start_x, int start_y){
     *(player_units[player_units_size]) = (unit){
 
         .position = new_vector((double)start_x, (double)start_y),
+        .blocked_path_timer = 0,
         .waypoint = NULL
     };
     player_units_size++;
@@ -156,7 +158,7 @@ void add_unit(int start_x, int start_y){
 
 void free_unit(int index){
 
-    while(!vectors_equal(unit_waypoint_pop(index), NULL_VECTOR)){ }
+    unit_waypoint_pop_all(index);
     free(player_units[index]);
 }
 
@@ -207,6 +209,11 @@ vector unit_waypoint_pop(int index){
     free(current);
 
     return position;
+}
+
+void unit_waypoint_pop_all(int index){
+
+    while(!vectors_equal(unit_waypoint_pop(index), NULL_VECTOR)){}
 }
 
 // SELECTION FUNCTIONS
@@ -346,15 +353,49 @@ void update_player_units(int delta){
         vector target_position = unit_waypoint_peek(index);
         if(!vectors_equal(target_position, NULL_VECTOR)){
 
-            if(vector_distance(player_units[index]->position, target_position) <= delta * UNIT_SPEED){
+            // Check if path will be blocked before moving
+            int square_magnitude = min(vector_distance(target_position, player_units[index]->position), 16);
+            vector square_delta = vector_scale(vector_difference(target_position, player_units[index]->position), square_magnitude);
+            vector square_position = vector_sum(player_units[index]->position, square_delta);
+            rectangle square_unit_rect = rect_from_vect(square_position, 32, 32);
+            bool is_collision = false;
+            for(int other_index = 0; other_index < player_units_size; other_index++){
 
-                player_units[index]->position = target_position;
-                unit_waypoint_pop(index);
+                if(index == other_index){
+
+                    continue;
+                }
+
+                if(is_rect_collision(square_unit_rect, get_player_unit_rect(other_index))){
+
+                    is_collision = true;
+                    break;
+                }
+            }
+
+            if(is_collision){
+
+                player_units[index]->blocked_path_timer += delta;
+                if(player_units[index]->blocked_path_timer >= UNIT_BLOCKED_PATH_TIMEOUT){
+
+                    unit_waypoint_pop_all(index);
+                    player_units[index]->blocked_path_timer = 0;
+                }
 
             }else{
 
-                vector position_delta = vector_scale(vector_difference(target_position, player_units[index]->position), UNIT_SPEED);
-                player_units[index]->position = vector_sum(player_units[index]->position, vector_mult_scaler(position_delta, delta));
+                player_units[index]->blocked_path_timer = 0;
+
+                if(vector_distance(player_units[index]->position, target_position) <= delta * UNIT_SPEED){
+
+                    player_units[index]->position = target_position;
+                    unit_waypoint_pop(index);
+
+                }else{
+
+                    vector position_delta = vector_scale(vector_difference(target_position, player_units[index]->position), UNIT_SPEED);
+                    player_units[index]->position = vector_sum(player_units[index]->position, vector_mult_scaler(position_delta, delta));
+                }
             }
         }
     }
@@ -410,6 +451,7 @@ void input_handle_right_click(int mouse_x, int mouse_y){
             return;
         }
 
+        unit_waypoint_pop_all(player_selection[index]);
         unit_waypoint_add(player_selection[index], mouse_x + camera_position.x, mouse_y + camera_position.y);
     }
 }
