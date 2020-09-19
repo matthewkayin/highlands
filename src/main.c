@@ -291,23 +291,15 @@ void render_combat(){
 
     // Render units
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    for(int index = 0; index < get_player_units_size(); index++){
+    for(int index = 0; index < get_units_size(); index++){
 
-        if(is_unit_on_screen(index)){
+        int_vector unit_position = get_unit_position(index);
+        render_image(IMAGE_KNIGHT, unit_position.x - camera_position.x, unit_position.y - camera_position.y);
+        if(is_unit_selected(index)){
 
-            int_vector unit_position = get_player_unit_position(index);
-            render_image(IMAGE_KNIGHT, unit_position.x - camera_position.x, unit_position.y - camera_position.y);
-
-            if(is_unit_selected(index)){
-
-                SDL_Rect outline_rect = (SDL_Rect){
-                    .x = unit_position.x - camera_position.x,
-                    .y = unit_position.y - camera_position.y,
-                    .w = 32,
-                    .h = 32
-                };
-                SDL_RenderDrawRect(renderer, &outline_rect);
-            }
+            rectangle unit_rect = get_unit_rect(index);
+            SDL_Rect render_rect = (SDL_Rect){ .x = unit_rect.x - camera_position.x, .y = unit_rect.y - camera_position.y, .w = unit_rect.width, .h = unit_rect.height };
+            SDL_RenderDrawRect(renderer, &render_rect);
         }
     }
 
