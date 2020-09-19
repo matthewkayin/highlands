@@ -1,11 +1,10 @@
 #include "unit.h"
-#include "quicksort.h"
 #include <stdlib.h>
 #include <stdio.h>
 
-static const int UNIT_WIDTH = 32;
-static const int UNIT_HEIGHT = 32;
-static const int UNIT_SPEED = 4;
+static const int UNIT_WIDTH = 14;
+static const int UNIT_HEIGHT = 22;
+static const int UNIT_SPEED = 3;
 static const int UNIT_MOVE_TIMEOUT = 1 * 60; // 5 seconds
 
 static unit* units;
@@ -71,6 +70,13 @@ int_vector get_unit_position(int index){
 rectangle get_unit_rect(int index){
 
     return rect_from_vect(units[index].position, UNIT_WIDTH, UNIT_HEIGHT);
+}
+
+rectangle get_unit_collider(int index){
+
+    int off_width = 6;
+    int off_height = 8;
+    return rect_from_vect(vector_sum(units[index].position, new_vector(off_width, off_height)), UNIT_WIDTH - (off_width * 2), UNIT_HEIGHT - (off_height * 2));
 }
 
 bool is_unit_selected(int index){
@@ -162,6 +168,8 @@ void update_unit(int index, int delta){
         units[index].position = units[index].waypoint;
         units[index].waypoint = NULL_VECTOR;
     }
+
+    // float separation_weight_distance_factor = 0.8 * (vector_distance(units[index].position, units[index].waypoint) / units[index].move_distance);
 
     vector velocity = get_velocity(index, 2);
     velocity = vector_sum(velocity, get_alignment(index, 0.6));
@@ -278,7 +286,7 @@ vector get_separation(int index, float weight){
             continue;
         }
 
-        if(vector_distance(units[index].position, units[i].position) <= 300){
+        if(vector_distance(units[index].position, units[i].position) <= 32){
 
             separation = vector_sum(separation, vector_difference(units[i].position, units[index].position));
             neighbour_count++;
@@ -302,5 +310,6 @@ void command_move(vector point, int map_width, int map_height){
     for(int i = 0; i < player_selection_size; i++){
 
         units[player_selection[i]].waypoint = vector_difference(point, new_vector(UNIT_WIDTH / 2, UNIT_HEIGHT / 2));
+        units[player_selection[i]].move_distance = vector_distance(units[player_selection[i]].position, units[player_selection[i]].waypoint);
     }
 }

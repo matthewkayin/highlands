@@ -1,5 +1,4 @@
 #include "combat.h"
-#include "quicksort.h"
 #include "global.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +37,10 @@ void init_combat(){
     create_unit(new_vector(25, 25));
     create_unit(new_vector(150, 50));
     create_unit(new_vector(75, 150));
+    create_unit(new_vector(120, 100));
+    create_unit(new_vector(140, 100));
+    create_unit(new_vector(160, 100));
+    create_unit(new_vector(180, 100));
 }
 
 void deinit_combat(){

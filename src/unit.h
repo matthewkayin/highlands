@@ -7,6 +7,7 @@ typedef struct{
     vector position;
     vector waypoint;
     int move_order;
+    int move_distance;
     int end_move_timer;
 } unit;
 
@@ -19,6 +20,7 @@ void create_unit(vector initial_position);
 int get_units_size();
 int_vector get_unit_position(int index);
 rectangle get_unit_rect(int index);
+rectangle get_unit_collider(int index);
 bool is_unit_selected(int index);
 
 // Selection
